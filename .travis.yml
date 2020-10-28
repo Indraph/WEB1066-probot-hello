@@ -1,8 +1,28 @@
-sudo: enabled
-language: python
+sudo: required
+services:
+  - docker
+
+env:
+  - NPM_TARGET=test
+  - NPM_TARGET=lint
+  - NPM_TARGET=coverage
 
 before_install:
-  - sudo apt-get update && sudo apt-get install -y python-yaml
+  - docker pull node:8-onbuild
+
+install:
+  - docker build -t probot-hello .
 
 script:
-  - sudo python2 -c "from yaml import load, dump"
+  - docker run -it --rm probot-hello npm run $NPM_TARGET
+
+after_sucess:
+  - set -x -v;
+    set -e;
+    if [ "${NPM_TARGET}" = "test" ]; then
+      docker tag probot-hello probot-hello:$(git rev-parse HEAD)
+    else
+      echo "skipping tag and go away";
+    fi
+    docker images;
+    set +x +v;
